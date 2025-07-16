@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>lzr 的猜数字小游戏</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #1e88e5;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        .game-container {
+            background: white;
+            padding: 30px;
+            border-radius: 30px;
+            box-shadow: 5px 10px 20px 5px rgba(0, 0, 0, 0.283);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        p {
+            font-size: 1.1em;
+            color: #424242;
+            margin: 0 0 20px 0;
+            text-align: center;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        input[type="number"] {
+            padding: 12px;
+            font-size: 1em;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 200px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="number"]:focus {
+            border-color: #1e88e5;
+            outline: none;
+            box-shadow: 0 0 5px rgba(30, 136, 229, 0.3);
+        }
+
+        button {
+            padding: 12px 25px;
+            font-size: 1.5em;
+            background: #1e88e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.3s;
+        }
+
+        button:hover {
+            background: #1976d2;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        #result {
+            min-height: 24px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        footer {
+            margin-top: 30px;
+            font-size: 0.9em;
+        }
+
+        footer a {
+            color: #666;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        footer a:hover {
+            color: #1e88e5;
+        }
+
+        footer img {
+            vertical-align: middle;
+            width: 16px;
+            height: 16px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>lzr's 猜数字小游戏</h1>
+        <p>我已经想好了一个 1 到 100 之间的数字，你来猜猜看吧！</p>
+        <div class="input-container">
+            <input type="number" id="guessInput" min="1" max="100">
+            <button onclick="checkGuess()">✓</button>
+        </div>
+        <p id="result"></p>
+    </div>
+
+    <footer>
+        <div>
+            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=11010802045464" rel="noreferrer" target="_blank">
+                <img src="备案图标.png" alt="备案图标">
+                <span>京公网安备11010802045464号</span>
+            </a>
+            <a href="https://beian.miit.gov.cn" target="_blank" style="margin-left: 20px;">
+                <span>京ICP备2024082540号-1</span>
+            </a>
+        </div>
+    </footer>
+
+    <script>
+        let targetNumber = Math.floor(Math.random() * 100) + 1;
+        function checkGuess() {
+            let guess = parseInt(document.getElementById('guessInput').value);
+            let result = document.getElementById('result');
+            
+            if (isNaN(guess)) {
+                result.innerHTML = "请输入有效的数字！";
+                result.style.color = "#e53935";
+                return;
+            }
+            
+            if (guess === targetNumber) {
+                result.innerHTML = "猜对了, Niubility!";
+                result.style.color = "#2e7d32";
+            } else if (guess < targetNumber) {
+                result.innerHTML = "猜小了, Vegetable Dog!";
+                result.style.color = "#f57c00";
+            } else {
+                result.innerHTML = "猜大了, Spicy Chicken!";
+                result.style.color = "#d81b60";
+            }
+        }
+    </script>
+</body>
+</html>

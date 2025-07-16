@@ -1,0 +1,154 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>lzr's 五子棋小游戏</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            margin-bottom: 20px;
+        }
+        #status {
+            margin-bottom: 10px;
+        }
+        #board {
+            display: grid;
+            grid-template-columns: repeat(15, 40px);
+            grid-template-rows: repeat(15, 40px);
+            gap: 1px;
+            background-color: #000;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: #f9c941;
+            border: 1px solid #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .cell::after {
+            content: '';
+            display: block;
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+        }
+        .cell.player1::after {
+            background-color: #000;
+        }
+        .cell.player2::after {
+            background-color: #fff;
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>lzr's 五子棋小游戏</h1>
+    <div id="status">玩家1（黑子）</div>
+    <div id="board"></div>
+    <script>
+        const boardSize = 15;
+        let board = [];
+        let currentPlayer = 'player1';
+        const statusElement = document.getElementById('status');
+
+        // 初始化棋盘
+        for (let i = 0; i < boardSize; i++) {
+            board[i] = [];
+            for (let j = 0; j < boardSize; j++) {
+                board[i][j] = '';
+            }
+        }
+
+        // 渲染棋盘
+        const boardElement = document.getElementById('board');
+        for (let i = 0; i < boardSize; i++) {
+            for (let j = 0; j < boardSize; j++) {
+                const cellElement = document.createElement('div');
+                cellElement.classList.add('cell');
+                cellElement.dataset.row = i;
+                cellElement.dataset.col = j;
+                cellElement.addEventListener('click', handleCellClick);
+                boardElement.appendChild(cellElement);
+            }
+        }
+
+        function handleCellClick(event) {
+            const row = event.target.dataset.row;
+            const col = event.target.dataset.col;
+
+            if (board[row][col] === '') {
+                board[row][col] = currentPlayer;
+                event.target.classList.add(currentPlayer);
+                if (checkWin(row, col)) {
+                    alert(`玩家${currentPlayer === 'player1' ? 1 : 2} wins! 最终落子在 (${parseInt(row) + 1}, ${parseInt(col) + 1})`);
+                    resetBoard();
+                } else {
+                    currentPlayer = currentPlayer === 'player1' ? 'player2' : 'player1';
+                    statusElement.textContent = `玩家${currentPlayer === 'player1' ? 1 : 2}（${currentPlayer === 'player1' ? '黑子' : '白子'}）`;
+                }
+            }
+        }
+
+        function checkWin(row, col) {
+            return (
+                checkDirection(row, col, 1, 0) ||
+                checkDirection(row, col, 0, 1) ||
+                checkDirection(row, col, 1, 1) ||
+                checkDirection(row, col, 1, -1)
+            );
+        }
+
+        function checkDirection(row, col, rowDir, colDir) {
+            let count = 1;
+            for (let i = 1; i < 5; i++) {
+                const newRow = parseInt(row) + i * rowDir;
+                const newCol = parseInt(col) + i * colDir;
+                if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize && board[newRow][newCol] === currentPlayer) {
+                    count++;
+                } else {
+                    break;
+                }
+            }
+            for (let i = 1; i < 5; i++) {
+                const newRow = parseInt(row) - i * rowDir;
+                const newCol = parseInt(col) - i * colDir;
+                if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize && board[newRow][newCol] === currentPlayer) {
+                    count++;
+                } else {
+                    break;
+                }
+            }
+            return count >= 5;
+        }
+
+        function resetBoard() {
+            board = [];
+            for (let i = 0; i < boardSize; i++) {
+                board[i] = [];
+                for (let j = 0; j < boardSize; j++) {
+                    board[i][j] = '';
+                }
+            }
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                cell.classList.remove('player1', 'player2');
+            });
+            currentPlayer = 'player1';
+            statusElement.textContent = '玩家1（黑子）';
+        }
+    </script>
+</body>
+</html>

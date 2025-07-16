@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>24点游戏</title>
+    <link rel="stylesheet" href="style.css?v1.3">
+</head>
+<body>
+    <div class="container">
+        <h1>24点游戏</h1>
+        <div class="numbers-container">
+            <div class="number-card" onclick="appendNumber(this.textContent, this)" data-number=""></div>
+            <div class="number-card" onclick="appendNumber(this.textContent, this)" data-number=""></div>
+            <div class="number-card" onclick="appendNumber(this.textContent, this)" data-number=""></div>
+            <div class="number-card" onclick="appendNumber(this.textContent, this)" data-number=""></div>
+        </div>
+        <div class="expression-container">
+            <input type="text" id="expression" readonly aria-label="表达式输入框">
+        </div>
+        <div class="button-container">
+            <div class="operators-grid">
+                <button type="button" onclick="appendOperator('+')">+</button>
+                <button type="button" onclick="appendOperator('-')">-</button>
+                <button type="button" onclick="appendOperator('×')">×</button>
+                <button type="button" onclick="appendOperator('÷')">÷</button>
+                <button type="button" onclick="appendOperator('(')">(</button>
+                <button type="button" onclick="appendOperator(')')">)</button>
+            </div>
+            <div class="control-grid">
+                <button type="button" onclick="deleteLastChar()">⌫</button>
+                <button type="button" onclick="clearExpression()">清除</button>
+                <button type="button" onclick="checkResult()">提交</button>
+            </div>
+            <div class="bottom-grid">
+                <button type="button" onclick="generateNewGame()">新游戏</button>
+                <button type="button" onclick="toggleSolutions()">答案</button>
+            </div>
+        </div>
+        <div id="solutions-panel" class="solutions-panel hidden">
+            <h3>可能的答案：<span id="solutions-count"></span></h3>
+            <div id="solutions-list"></div>
+            <div class="solutions-pagination">
+                <button type="button" onclick="prevSolutionsPage()" id="prev-page">上一页</button>
+                <span id="page-info"></span>
+                <button type="button" onclick="nextSolutionsPage()" id="next-page">下一页</button>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

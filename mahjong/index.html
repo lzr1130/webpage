@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>川麻听牌计算器</title>
+    <style>
+        :root {
+            --bg-body: #eef2f5;
+            --bg-card: #ffffff;
+            --primary: #1677ff;
+            --danger: #ff4d4f;
+            --undo: #faad14;
+            --tile-border: #d9d9d9;
+            --tile-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-body);
+            margin: 0;
+            padding: 0;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* --- 核心容器：限制最大宽度 --- */
+        .app-wrapper {
+            width: 100%;
+            max-width: 420px; /* 限制宽度，电脑上不会太宽 */
+            background: var(--bg-card);
+            min-height: 100vh;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* 电脑端的样式优化：让它看起来像个卡片 */
+        @media (min-width: 450px) {
+            body {
+                padding: 20px 0;
+                align-items: flex-start; /* 顶部对齐 */
+            }
+            .app-wrapper {
+                min-height: auto; /* 电脑上不需要撑满高度 */
+                border-radius: 16px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+                margin-bottom: 20px;
+            }
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.2rem;
+            margin: 5px 0 20px 0;
+            color: #333;
+            font-weight: 700;
+        }
+
+        /* --- 麻将牌通用样式 --- */
+        .tile {
+            aspect-ratio: 3 / 4; /* 锁定 3:4 比例 */
+            background: #fff;
+            border: 1px solid var(--tile-border);
+            border-radius: 4px;
+            box-shadow: var(--tile-shadow);
+            position: relative;
+            overflow: hidden; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* 字体层：放大撑满盒子 */
+        .tile span {
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+            line-height: 1;
+            transform: scale(1.5); /* 放大倍数 */
+            display: block;
+            margin-top: -5%; 
+        }
+        
+        /* 颜色 */
+        .tile.wan span { color: #d32f2f; }
+        .tile.tiao span { color: #2e7d32; }
+        .tile.tong span { color: #1976d2; }
+
+
+        /* --- 1. 显示区域 --- */
+        .display-area {
+            background: #f8f9fa;
+            border: 1px dashed #ced4da;
+            border-radius: 8px;
+            padding: 10px 5px;
+            min-height: 70px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .placeholder { color: #aaa; font-size: 13px; }
+
+        .display-area .tile {
+            width: 36px;
+            font-size: 22px;
+            margin: 2px;
+            background: #fff;
+        }
+        .mo-pai { margin-left: 12px !important; border-left: 2px solid var(--primary); }
+
+
+        /* --- 2. 按钮区域 --- */
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .controls button {
+            flex: 1;
+            padding: 12px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .controls button:active { opacity: 0.8; }
+        .btn-undo { background: var(--undo); }
+        .btn-clear { background: var(--danger); }
+        .btn-calc { background: var(--primary); }
+
+
+        /* --- 3. 键盘区域 --- */
+        .keyboard {
+            background: #f8f9fa; /* 稍微深一点的背景区分 */
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .suit-row {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr); 
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        .suit-row:last-child { margin-bottom: 0; }
+
+        .keyboard .tile {
+            width: 100%; 
+            /* 关键：字体大小自适应，但在大屏上限死 */
+            font-size: min(6.5vw, 28px); 
+        }
+
+
+        /* --- 4. 结果区域 --- */
+        .result-item {
+            background: #fff;
+            margin-bottom: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .action-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            color: #444;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 8px;
+        }
+
+        .action-row .tile {
+            width: 30px;
+            font-size: 18px;
+            margin: 0 6px;
+        }
+
+        .ting-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .ting-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 32px;
+        }
+
+        .ting-group .tile {
+            width: 100%;
+            font-size: 20px;
+        }
+
+        .rem-tag {
+            font-size: 10px;
+            margin-top: -6px;
+            z-index: 2;
+            padding: 2px 0;
+            border-radius: 3px;
+            text-align: center;
+            width: 90%;
+            font-weight: 700;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .tips {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+            margin-top: 10px;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-wrapper">
+        <h1>🀄️ 川麻听牌计算器</h1>
+
+        <!-- 手牌显示 -->
+        <div class="display-area" id="handDisplay" onclick="removeLastTile()">
+            <div class="placeholder">点击下方键盘输入牌</div>
+        </div>
+
+        <!-- 按钮 -->
+        <div class="controls">
+            <button class="btn-undo" onclick="removeLastTile()">回退</button>
+            <button class="btn-clear" onclick="clearHand()">清空</button>
+            <button class="btn-calc" onclick="calculate()">计算</button>
+        </div>
+
+        <!-- 键盘 -->
+        <div class="keyboard">
+            <div class="suit-row">
+                <div class="tile wan" onclick="addTile(1)"><span>🀇</span></div>
+                <div class="tile wan" onclick="addTile(2)"><span>🀈</span></div>
+                <div class="tile wan" onclick="addTile(3)"><span>🀉</span></div>
+                <div class="tile wan" onclick="addTile(4)"><span>🀊</span></div>
+                <div class="tile wan" onclick="addTile(5)"><span>🀋</span></div>
+                <div class="tile wan" onclick="addTile(6)"><span>🀌</span></div>
+                <div class="tile wan" onclick="addTile(7)"><span>🀍</span></div>
+                <div class="tile wan" onclick="addTile(8)"><span>🀎</span></div>
+                <div class="tile wan" onclick="addTile(9)"><span>🀏</span></div>
+            </div>
+            <div class="suit-row">
+                <div class="tile tiao" onclick="addTile(11)"><span>🀐</span></div>
+                <div class="tile tiao" onclick="addTile(12)"><span>🀑</span></div>
+                <div class="tile tiao" onclick="addTile(13)"><span>🀒</span></div>
+                <div class="tile tiao" onclick="addTile(14)"><span>🀓</span></div>
+                <div class="tile tiao" onclick="addTile(15)"><span>🀔</span></div>
+                <div class="tile tiao" onclick="addTile(16)"><span>🀕</span></div>
+                <div class="tile tiao" onclick="addTile(17)"><span>🀖</span></div>
+                <div class="tile tiao" onclick="addTile(18)"><span>🀗</span></div>
+                <div class="tile tiao" onclick="addTile(19)"><span>🀘</span></div>
+            </div>
+            <div class="suit-row">
+                <div class="tile tong" onclick="addTile(21)"><span>🀙</span></div>
+                <div class="tile tong" onclick="addTile(22)"><span>🀚</span></div>
+                <div class="tile tong" onclick="addTile(23)"><span>🀛</span></div>
+                <div class="tile tong" onclick="addTile(24)"><span>🀜</span></div>
+                <div class="tile tong" onclick="addTile(25)"><span>🀝</span></div>
+                <div class="tile tong" onclick="addTile(26)"><span>🀞</span></div>
+                <div class="tile tong" onclick="addTile(27)"><span>🀟</span></div>
+                <div class="tile tong" onclick="addTile(28)"><span>🀠</span></div>
+                <div class="tile tong" onclick="addTile(29)"><span>🀡</span></div>
+            </div>
+        </div>
+
+        <!-- 结果 -->
+        <div id="resultArea"></div>
+
+        <div class="tips">
+            * 仅支持川麻规则 (缺一门/七对子) <br>
+            * 结果仅供参考
+        </div>
+    </div>
+
+<script>
+    let currentHand = [];
+    
+    const tileMap = {
+        1: { char: '🀇', type: 'wan' }, 2: { char: '🀈', type: 'wan' }, 3: { char: '🀉', type: 'wan' },
+        4: { char: '🀊', type: 'wan' }, 5: { char: '🀋', type: 'wan' }, 6: { char: '🀌', type: 'wan' },
+        7: { char: '🀍', type: 'wan' }, 8: { char: '🀎', type: 'wan' }, 9: { char: '🀏', type: 'wan' },
+        11: { char: '🀐', type: 'tiao' }, 12: { char: '🀑', type: 'tiao' }, 13: { char: '🀒', type: 'tiao' },
+        14: { char: '🀓', type: 'tiao' }, 15: { char: '🀔', type: 'tiao' }, 16: { char: '🀕', type: 'tiao' },
+        17: { char: '🀖', type: 'tiao' }, 18: { char: '🀗', type: 'tiao' }, 19: { char: '🀘', type: 'tiao' },
+        21: { char: '🀙', type: 'tong' }, 22: { char: '🀚', type: 'tong' }, 23: { char: '🀛', type: 'tong' },
+        24: { char: '🀜', type: 'tong' }, 25: { char: '🀝', type: 'tong' }, 26: { char: '🀞', type: 'tong' },
+        27: { char: '🀟', type: 'tong' }, 28: { char: '🀠', type: 'tong' }, 29: { char: '🀡', type: 'tong' }
+    };
+
+    const allTiles = [
+        1,2,3,4,5,6,7,8,9,
+        11,12,13,14,15,16,17,18,19,
+        21,22,23,24,25,26,27,28,29
+    ];
+
+    function addTile(code) {
+        if (currentHand.length >= 14) return;
+        currentHand.push(code);
+        renderHand();
+        if((currentHand.length - 2) % 3 === 0) {
+            calculate();
+        } else {
+            document.getElementById('resultArea').innerHTML = '';
+        }
+    }
+
+    function removeLastTile() {
+        if(currentHand.length === 0) return;
+        currentHand.pop();
+        renderHand();
+        document.getElementById('resultArea').innerHTML = '';
+    }
+    
+    function clearHand() {
+        currentHand = [];
+        renderHand();
+        document.getElementById('resultArea').innerHTML = '';
+    }
+
+    function renderHand() {
+        const display = document.getElementById('handDisplay');
+        display.innerHTML = '';
+        
+        if (currentHand.length === 0) {
+            display.innerHTML = '<div class="placeholder">点击下方键盘输入牌</div>';
+            return;
+        }
+
+        const sortedHand = [...currentHand].sort((a, b) => a - b);
+
+        sortedHand.forEach((code, index) => {
+            const tileData = tileMap[code];
+            const div = document.createElement('div');
+            div.className = `tile ${tileData.type}`;
+            if (currentHand.length % 3 === 2 && index === currentHand.length - 1) {
+                div.classList.add('mo-pai'); // 标记为刚摸的牌
+            }
+            const span = document.createElement('span');
+            span.innerText = tileData.char;
+            div.appendChild(span);
+            display.appendChild(div);
+        });
+    }
+
+    // --- 算法部分 ---
+
+    function countTiles(tiles) {
+        const counts = {};
+        for (let t of tiles) counts[t] = (counts[t] || 0) + 1;
+        return counts;
+    }
+
+    function isWin(tiles) {
+        if (tiles.length === 0) return false;
+        
+        // 七对
+        if (tiles.length === 14) {
+            const counts = countTiles(tiles);
+            let pairs = 0;
+            for (let k in counts) {
+                if (counts[k] === 2) pairs++;
+                if (counts[k] === 4) pairs+=2;
+            }
+            if (pairs === 7) return true;
+        }
+
+        // 常规胡
+        const counts = countTiles(tiles);
+        const uniqueTiles = Object.keys(counts).map(Number).sort((a,b)=>a-b);
+
+        for (let pairTile of uniqueTiles) {
+            if (counts[pairTile] >= 2) {
+                let copyTiles = [...tiles];
+                let idx = copyTiles.indexOf(pairTile); copyTiles.splice(idx, 1);
+                idx = copyTiles.indexOf(pairTile); copyTiles.splice(idx, 1);
+                if (checkSets(copyTiles)) return true;
+            }
+        }
+        return false;
+    }
+
+    function checkSets(tiles) {
+        if (tiles.length === 0) return true;
+        tiles.sort((a,b) => a-b);
+        const first = tiles[0];
+        const counts = countTiles(tiles);
+
+        if (counts[first] >= 3) {
+            let nextTiles = [...tiles];
+            nextTiles.splice(0, 3);
+            if (checkSets(nextTiles)) return true;
+        }
+        if (first + 1 <= 29 && first + 2 <= 29) {
+            let idx2 = tiles.indexOf(first + 1);
+            let idx3 = tiles.indexOf(first + 2);
+            if (idx2 !== -1 && idx3 !== -1) {
+                let toRemove = [first, first+1, first+2];
+                let newArr = [];
+                let removePointer = 0;
+                for(let t of tiles) {
+                    if(removePointer < 3 && t === toRemove[removePointer]) {
+                        removePointer++;
+                    } else {
+                        newArr.push(t);
+                    }
+                }
+                if (removePointer === 3 && checkSets(newArr)) return true;
+            }
+        }
+        return false;
+    }
+
+    function calculate() {
+        const resultArea = document.getElementById('resultArea');
+        resultArea.innerHTML = '';
+
+        if (currentHand.length % 3 !== 2) {
+            resultArea.innerHTML = '<div style="color:#999; text-align:center; padding:10px;">相公 (牌数不对)</div>';
+            return;
+        }
+        
+        let solutions = []; 
+
+        if (currentHand.length === 14) {
+            let uniqueHand = [...new Set(currentHand)].sort((a,b)=>a-b);
+            uniqueHand.forEach(discardTile => {
+                let tempHand = [...currentHand];
+                tempHand.splice(tempHand.indexOf(discardTile), 1);
+                let tingTiles = getTingTiles(tempHand);
+                if (tingTiles.length > 0) {
+                    solutions.push({ discard: discardTile, ting: tingTiles });
+                }
+            });
+        } else if (currentHand.length === 13 || currentHand.length === 1) {
+             let tingTiles = getTingTiles(currentHand);
+             if (tingTiles.length > 0) solutions.push({ discard: null, ting: tingTiles });
+        }
+
+        if (solutions.length === 0) {
+            resultArea.innerHTML = '<div style="text-align:center; padding:20px; color:#666">无叫 (无法听牌)</div>';
+            return;
+        }
+
+        solutions.forEach(sol => {
+            let html = `<div class="result-item">`;
+            
+            html += `<div class="action-row">`;
+            if (sol.discard !== null) {
+                const dTile = tileMap[sol.discard];
+                html += `打 <div class="tile ${dTile.type}"><span>${dTile.char}</span></div> 听：`;
+            } else {
+                html += `现已听：`;
+            }
+            html += `</div>`;
+
+            html += `<div class="ting-container">`;
+            sol.ting.forEach(t => {
+                const tTile = tileMap[t.tile];
+                let bg = t.left === 0 ? '#d9d9d9' : (t.left <= 1 ? '#fff1f0' : '#f6ffed');
+                let color = t.left === 0 ? '#999' : (t.left <= 1 ? '#cf1322' : '#389e0d');
+                let countText = t.left === 0 ? '绝' : `${t.left}张`;
+
+                html += `
+                    <div class="ting-group">
+                        <div class="tile ${tTile.type}"><span>${tTile.char}</span></div>
+                        <div class="rem-tag" style="background:${bg}; color:${color}">
+                            ${countText}
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div></div>`;
+            resultArea.innerHTML += html;
+        });
+    }
+
+    function getTingTiles(hand13) {
+        let winningTiles = [];
+        let handCounts = countTiles(hand13);
+        for (let tile of allTiles) {
+            if (isWin([...hand13, tile])) {
+                let existing = handCounts[tile] || 0;
+                let left = 4 - existing;
+                if (left < 0) left = 0;
+                winningTiles.push({ tile: tile, left: left });
+            }
+        }
+        return winningTiles;
+    }
+</script>
+</body>
+</html>

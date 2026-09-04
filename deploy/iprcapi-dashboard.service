@@ -1,0 +1,26 @@
+[Unit]
+Description=Read-only New API quota dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/var/www/lizerun.top/iprcapi
+Environment=HOME=/home/ubuntu
+Environment=PYTHONUNBUFFERED=1
+Environment=IPRCAPI_CACHE_FILE=/var/lib/iprcapi-dashboard/source-cache.json
+ExecStart=/usr/bin/python3 /var/www/lizerun.top/iprcapi/server.py
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadOnlyPaths=/var/www/lizerun.top/iprcapi
+StateDirectory=iprcapi-dashboard
+StateDirectoryMode=0700
+
+[Install]
+WantedBy=multi-user.target

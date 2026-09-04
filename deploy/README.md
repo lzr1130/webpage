@@ -9,6 +9,10 @@ cd /home/ubuntu/webpage
 ./deploy/deploy.sh
 ```
 
+`/iprcapi/` 还会安装并重启本机只读查询服务 `iprcapi-dashboard.service`。
+该服务从 `/home/ubuntu/.newapi_env` 或 `/home/ubuntu/.bashrc` 读取
+`NEW_API_KEY`、`NEW_API_HOST` 和 `NEW_API_BASE_URL`。
+
 当前 Nginx 使用手动上传的证书：
 
 ```bash

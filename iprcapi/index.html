@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="theme-color" content="#f6f8fb">
+  <title>API 额度看板</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main id="dashboardView" class="dashboard">
+    <header class="topbar">
+      <div class="page-title">
+        <h1>API 额度看板</h1>
+        <p id="heroMeta">正在读取实时数据…</p>
+      </div>
+      <div class="top-actions">
+        <span id="healthPill" class="status-pill"><i></i><span>正在连接</span></span>
+        <button id="refreshButton" class="icon-button" type="button" title="刷新数据" aria-label="刷新数据">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section id="noticeArea" class="notice-area" aria-live="polite"></section>
+
+    <section class="quota-card panel" aria-label="额度概览">
+      <div class="quota-heading">
+        <div>
+          <span class="section-label">剩余额度</span>
+          <div class="quota-number"><strong id="availableQuota">—</strong><span id="availableUnit">内部额度点</span></div>
+        </div>
+        <div class="quota-percent"><strong id="heroPercent">—</strong><span>可用</span></div>
+      </div>
+      <div class="quota-track" aria-label="剩余额度进度"><span id="quotaProgress"></span></div>
+      <div class="quota-scale">
+        <span>已使用 <b id="usedQuota">—</b></span>
+        <span>总额度 <b id="grantedQuota">—</b></span>
+      </div>
+      <div class="quota-facts">
+        <div><span>已使用比例</span><strong id="usedPercent">—</strong><small id="usedConverted">等待数据</small></div>
+        <div><span>额度总量</span><strong id="grantedConverted">—</strong><small>按服务端计费单位折算</small></div>
+        <div><span>有效期</span><strong id="expiryDays">—</strong><small id="expiryDate">等待数据</small><i id="expiryState">—</i></div>
+      </div>
+    </section>
+
+    <section class="content-grid">
+      <article class="panel usage-panel">
+        <div class="panel-head">
+          <div><h2>近 14 天调用</h2><p class="panel-subtitle">请求量与 Token 使用趋势</p></div>
+          <div class="segmented" role="group" aria-label="图表指标">
+            <button class="chart-mode active" data-mode="requests" type="button">请求</button>
+            <button class="chart-mode" data-mode="tokens" type="button">Tokens</button>
+            <button class="chart-mode" data-mode="quota" type="button">额度</button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <svg id="usageChart" viewBox="0 0 760 270" role="img" aria-label="近十四天用量趋势"></svg>
+          <div id="chartEmpty" class="chart-empty hidden"><span>还没有调用记录</span><small>完成首次请求后，这里会出现趋势</small></div>
+        </div>
+        <div class="activity-stats">
+          <div><span>记录请求</span><strong id="requestCount">0</strong></div>
+          <div><span>输入 Tokens</span><strong id="promptTokens">0</strong></div>
+          <div><span>输出 Tokens</span><strong id="completionTokens">0</strong></div>
+          <div><span>流式请求</span><strong id="streamedCount">0</strong></div>
+        </div>
+      </article>
+
+      <article class="panel identity-panel">
+        <div class="panel-head"><div><h2>凭据状态</h2><p class="panel-subtitle">当前 Token 的基础信息</p></div><span id="tokenState" class="status-pill compact online"><i></i><span>有效</span></span></div>
+        <dl class="info-list">
+          <div><dt>名称</dt><dd id="tokenName">—</dd></div>
+          <div><dt>模型权限</dt><dd id="modelLimit">—</dd></div>
+          <div><dt>额度类型</dt><dd id="quotaType">—</dd></div>
+          <div><dt>可用模型</dt><dd id="modelCount">—</dd></div>
+          <div><dt>服务延迟</dt><dd id="latency">—</dd></div>
+          <div><dt>上次更新</dt><dd id="updatedAt">—</dd></div>
+        </dl>
+      </article>
+    </section>
+
+    <section class="panel models-panel">
+      <div class="panel-head models-head">
+        <div><h2>可用模型与计费</h2><p class="panel-subtitle">当前 Key 可访问的模型与倍率</p></div>
+        <div class="model-tools">
+          <label class="search-field">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+            <input id="modelSearch" type="search" placeholder="搜索模型" aria-label="搜索模型">
+          </label>
+          <select id="vendorFilter" aria-label="按供应商筛选"><option value="">全部供应商</option></select>
+        </div>
+      </div>
+      <div id="modelList" class="model-list"></div>
+      <p id="modelEmpty" class="empty-row hidden">没有匹配的模型</p>
+    </section>
+
+    <section class="lower-grid">
+      <article class="panel distribution-panel">
+        <div class="panel-head"><div><h2>模型使用分布</h2><p class="panel-subtitle">按调用次数统计</p></div></div>
+        <div id="distributionList" class="distribution-list"></div>
+        <p id="distributionEmpty" class="empty-row">暂无使用数据</p>
+      </article>
+      <article class="panel endpoint-panel">
+        <div class="panel-head"><div><h2>协议端点</h2><p class="panel-subtitle">当前服务支持的调用方式</p></div></div>
+        <div id="endpointList" class="endpoint-list"></div>
+      </article>
+    </section>
+
+    <section class="panel logs-panel">
+      <div class="panel-head">
+        <div><h2>最近调用</h2><p class="panel-subtitle">最多显示最近 20 条脱敏记录</p></div>
+        <span class="privacy-label">已隐藏敏感字段</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>时间</th><th>模型</th><th>输入</th><th>输出</th><th>额度</th><th>耗时</th></tr></thead>
+          <tbody id="logRows"></tbody>
+        </table>
+        <p id="logEmpty" class="empty-row">暂无调用记录</p>
+      </div>
+    </section>
+
+    <footer>
+      <span>API 额度看板</span>
+      <span id="footerSystem">只读 · 密钥仅存于服务器</span>
+    </footer>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="./app.js" defer></script>
+</body>
+</html>

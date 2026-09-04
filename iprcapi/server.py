@@ -26,10 +26,10 @@ from typing import Any
 
 HOST = "127.0.0.1"
 PORT = 18765
-CACHE_SECONDS = 5
+CACHE_SECONDS = 1
 CACHE_FILE = Path(os.environ.get("IPRCAPI_CACHE_FILE", "/var/lib/iprcapi-dashboard/source-cache.json"))
 SOURCE_CACHE_SECONDS = {
-    "usage": 5,
+    "usage": 1,
     "logs": 5,
     "models": 300,
     "pricing": 300,

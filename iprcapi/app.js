@@ -4,6 +4,7 @@ const $$ = (selector) => [...document.querySelectorAll(selector)];
 const state = { data: null, chartMode: 'requests', filter: '', vendor: '', refreshAvailableAt: 0 };
 const nf = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 });
 const compact = new Intl.NumberFormat('zh-CN', { notation: 'compact', maximumFractionDigits: 1 });
+const rmbInteger = new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 0 });
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
@@ -49,7 +50,7 @@ async function loadDashboard(force = false) {
   button.disabled = true;
   try {
     state.data = await api(`dashboard${force ? '?refresh=1' : ''}`);
-    state.refreshAvailableAt = Date.now() + 5000;
+    state.refreshAvailableAt = Date.now() + 1000;
     render();
     if (force) toast('数据已更新');
   } catch (error) {
@@ -60,28 +61,29 @@ async function loadDashboard(force = false) {
   }
 }
 
-function quotaUnit(value, unit) {
-  if (!unit) return `${number(value, true)} 点`;
-  return `${number(Number(value || 0) / unit)} 计费单位`;
+function quotaRmb(value, status) {
+  const unit = Number(status.quota_per_unit || 500000);
+  const exchangeRate = Number(status.usd_exchange_rate || 6);
+  const amount = unit > 0 ? Number(value || 0) / unit * exchangeRate : 0;
+  return `¥${rmbInteger.format(Math.round(amount))}`;
 }
 
 function render() {
   const data = state.data;
   const usage = data.usage || {};
   const status = data.status || {};
-  const unit = Number(status.quota_per_unit || 500000);
   const granted = Number(usage.total_granted || 0);
   const available = Number(usage.total_available || 0);
   const used = Number(usage.total_used || 0);
   const availablePct = usage.unlimited_quota ? 100 : (granted > 0 ? Math.max(0, Math.min(100, available / granted * 100)) : 0);
   const usedPct = usage.unlimited_quota ? 0 : (granted > 0 ? Math.max(0, Math.min(100, used / granted * 100)) : 0);
 
-  $('#availableQuota').textContent = usage.unlimited_quota ? '无限' : number(available);
-  $('#usedQuota').textContent = number(used);
-  $('#grantedQuota').textContent = usage.unlimited_quota ? '无限' : number(granted);
-  $('#availableUnit').textContent = usage.unlimited_quota ? '无限额度已启用' : quotaUnit(available, unit);
-  $('#usedConverted').textContent = quotaUnit(used, unit);
-  $('#grantedConverted').textContent = usage.unlimited_quota ? '无上限' : quotaUnit(granted, unit);
+  $('#availableQuota').textContent = usage.unlimited_quota ? '无限' : quotaRmb(available, status);
+  $('#usedQuota').textContent = quotaRmb(used, status);
+  $('#grantedQuota').textContent = usage.unlimited_quota ? '无限' : quotaRmb(granted, status);
+  $('#availableUnit').textContent = usage.unlimited_quota ? '无限额度已启用' : `${number(available)} 额度点`;
+  $('#usedConverted').textContent = `已消耗 ${quotaRmb(used, status)}`;
+  $('#grantedConverted').textContent = usage.unlimited_quota ? '无上限' : quotaRmb(granted, status);
   $('#usedPercent').textContent = `${number(usedPct)}%`;
   $('#heroPercent').textContent = usage.unlimited_quota ? '∞' : `${number(availablePct)}%`;
   $('#quotaProgress').style.width = `${availablePct}%`;
@@ -217,4 +219,12 @@ $$('.chart-mode').forEach((button) => button.addEventListener('click', () => {
 }));
 
 loadDashboard();
-setInterval(() => loadDashboard(), 60000);
+setInterval(() => {
+  if (document.visibilityState === 'visible') loadDashboard();
+}, 30000);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Date.now() >= state.refreshAvailableAt) {
+    loadDashboard();
+  }
+});
